@@ -284,3 +284,37 @@ func (s *BoardService) GetBoardConfiguration(ctx context.Context, boardID int) (
 	return result, resp, err
 
 }
+
+// GetIssuesForBoard returns all issues from a board, for a given board ID.
+// Jira API docs:https://developer.atlassian.com/cloud/jira/software/rest/api-group-board/#api-rest-agile-1-0-board-boardid-issue-get
+
+type IssueListOptions struct {
+	Jql string `url:"jql,omitempty"`
+}
+
+func (s *BoardService) GetIssuesForBoard(ctx context.Context, boardId int, options *IssueListOptions) (*searchResult, *Response, error) {
+	apiEndpoint := fmt.Sprintf("rest/agile/1.0/board/%d/issue", boardId)
+	url := apiEndpoint
+	err := error(nil)
+	if options != nil {
+		url, err = addOptions(apiEndpoint, options)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	req, err := s.client.NewRequest(ctx, http.MethodGet, url, nil)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	issues := new(searchResult)
+	resp, err := s.client.Do(req, issues)
+	if err != nil {
+		jerr := NewJiraError(resp, err)
+		return nil, resp, jerr
+	}
+
+	return issues, resp, err
+}

@@ -187,7 +187,7 @@ func TestBoardService_GetAllSprints(t *testing.T) {
 	}
 }
 
-func TestBoardService_GetBoardConfigoration(t *testing.T) {
+func TestBoardService_GetBoardConfiguration(t *testing.T) {
 	setup()
 	defer teardown()
 	testAPIEndpoint := "/rest/agile/1.0/board/35/configuration"
@@ -231,5 +231,36 @@ func TestBoardService_GetBoardConfigoration(t *testing.T) {
 	}
 	if inProgressColumn.Max != 0 {
 		t.Errorf("Expected a max of 0 issues in progress. Got %d", inProgressColumn.Max)
+	}
+}
+
+func TestBoardService_GetIssuesForBoard(t *testing.T) {
+	setup()
+	defer teardown()
+	testAPIEndpoint := "/rest/agile/1.0/board/35/issue"
+
+	raw, err := os.ReadFile("../testing/mock-data/issues_for_board.json")
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	testMux.HandleFunc(testAPIEndpoint, func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, http.MethodGet)
+		testRequestURL(t, r, testAPIEndpoint)
+		fmt.Fprint(w, string(raw))
+	})
+
+	issues, _, err := testClient.Board.GetIssuesForBoard(context.Background(), 35, nil)
+	if err != nil {
+		t.Errorf("Got error: %v", err)
+	}
+
+	if issues == nil {
+		t.Error("Expected issues. Got nil.")
+		return
+	}
+
+	if len(issues.Issues) != 1 {
+		t.Errorf("Expected 1 issues. Got %d", len(issues.Issues))
 	}
 }
